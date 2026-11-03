@@ -1,0 +1,17 @@
+name: Sync main from team repo
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh repo sync "$GITHUB_REPOSITORY" --branch main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
