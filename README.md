@@ -26,7 +26,17 @@ The system validates the transaction, applies applicable business rules, records
 
 ## Application Interface
 
-[`frontend/`](frontend/index.html) is the canonical MarketStreet interface. It supports Market orders only (BR-9). With the local server running, open [MarketStreet](http://localhost:3000/). Earlier class exercises and prototypes are preserved in [archive/](archive/README.md).
+[`frontend/`](frontend/index.html) is the canonical MarketStreet interface. It supports Market orders only (BR-9) and sends trades to the AWS backend. Open `frontend/index.html` in a browser, or use the deployed Amplify site. Earlier class exercises and prototypes are preserved in [archive/](archive/README.md).
+
+## Project Layout
+
+| Folder | What it is |
+|---|---|
+| [`frontend/`](frontend/) | The website (HTML, CSS, JavaScript), deployed with AWS Amplify |
+| [`aws/lambda/`](aws/README.md) | The live backend: the Lambda `MarketStreet-ProcessTrade` behind API Gateway, saving to DynamoDB |
+| [`archive/local-backend/`](archive/local-backend/) | The retired Week 8–9 Express server and business logic (`server/`, `backend/`), kept as coursework evidence |
+| [`docs/`](docs/) | Requirements, business rules, and system design |
+| [`Testing/`](Testing/) | Test plans, results, and evidence for each week |
 
 Each interactive page loads its own script (`trade.js`, `history.js`, or `result.js`). Shared state and helpers remain in `app.js`. Trade form identifiers follow the [data dictionary](docs/03-system-design/data-dictionary.md); `trade.js` maps `stockSymbol` and `shareQuantity` to the existing API's `symbol` and `quantity` fields.
 
@@ -52,14 +62,16 @@ The purpose of this project is to demonstrate the complete processing of a stock
 
 ## Week 9 — Local API Setup (Session 1)
 
+> **Archived:** the Week 9 Express server and Week 8 backend now live in `archive/local-backend/`. The current backend is the AWS Lambda in [`aws/lambda/`](aws/README.md).
+
 ### Overview
 MarketStreet uses a local Express server to process
 stock trade requests through the existing Week 8
 backend business logic.
 
 Architecture: the browser (frontend/) sends a JSON request with
-fetch() to POST /api/trades on the Express server (server/server.js),
-which calls processTrade() in backend/backend.js and returns a JSON
+fetch() to POST /api/trades on the Express server (now archive/local-backend/server/server.js),
+which calls processTrade() in archive/local-backend/backend/backend.js and returns a JSON
 result (HTTP 200 ACCEPTED or HTTP 400 REJECTED).
 
 ### How to Run the Server Locally
@@ -69,7 +81,7 @@ result (HTTP 200 ACCEPTED or HTTP 400 REJECTED).
 3. Open a terminal in the main project folder.
 4. Run these commands:
 
-    cd server
+    cd archive/local-backend/server
     npm install
     npm start
 
@@ -79,7 +91,7 @@ The server runs at http://localhost:3000
 POST /api/trades
 
 The endpoint receives JSON transaction data and
-calls processTrade() from backend/backend.js.
+calls processTrade() from archive/local-backend/backend/backend.js.
 
 ### Endpoint Test Results
 
@@ -119,7 +131,7 @@ Users can submit Buy and Sell orders through the browser, and the server process
 2. Open the terminal.
 3. Navigate to the server folder:
 
-   cd server
+   cd archive/local-backend/server
 
 4. Start the local server:
 
@@ -130,11 +142,11 @@ Users can submit Buy and Sell orders through the browser, and the server process
    http://localhost:3000/trade.html?symbol=AAPL
 
 ### Automated API Tests
-With the server running, open a second terminal in the server folder and run:
+With the server running, open a second terminal in the archive/local-backend/server folder and run:
 
    npm test
 
-This runs server/test-api.js, which sends six JSON requests to
+This runs archive/local-backend/server/test-api.js, which sends six JSON requests to
 POST /api/trades and compares the expected and actual results.
 
 ### Integration Testing
@@ -171,9 +183,24 @@ Sophia Musetti:
 
 ## Week 11 — Saving Trades to DynamoDB
 
-The Lambda (`MarketStreet-ProcessTrade`) still validates every trade with the existing business rules in `lambda/backend/trades.js`. Accepted trades are now saved to the DynamoDB table `MarketStreetTrades` with a server-generated `transactionId`, and rejected trades are not saved.
+The Lambda (`MarketStreet-ProcessTrade`) still validates every trade with the existing business rules in [`aws/lambda/backend/trades.js`](aws/lambda/backend/trades.js). Accepted trades are now saved to the DynamoDB table `MarketStreetTrades` with a server-generated `transactionId`, and rejected trades are not saved.
 
 - `POST /api/trades` validates the trade and saves it if accepted (`persisted: true`).
 - `GET /api/trades/{transactionId}` returns one saved trade.
 
 [View the Week 11 setup, deployment checklist and test results](Testing/Week-11-DynamoDB/README.md)
+
+## Scenario Mode (experimental)
+
+[frontend/scenarios.html](frontend/scenarios.html) replays a real market period (2008 crisis, dot-com bust, COVID crash, meme stocks, 2022 rate hikes). You start with $100,000, one trading day passes every few seconds, and real headlines appear on their real dates. At the end your return is compared with the market (SPY or QQQ).
+
+- Prices are real daily open, high, low, close and volume. During a day the price moves through that day's real range and ends on the real close. The chart also shows about a year of real history before the scenario starts.
+- Each scenario opens with a briefing and starts paused, so you can trade before the clock runs. The clock pauses when a headline breaks (it can be turned off), and Next day / Next headline skip quiet stretches.
+- Orders are a dollar amount, rounded down to whole shares. **Buy** profits if the price rises; **Short** sells borrowed shares and profits if it falls. Positions show the average cost and profit or loss, and are closed (all or half) from the Positions tab. You can't buy a stock you are short or short one you own, your shorts can be worth at most your account value when you open them, and there are no borrowing fees.
+- Your average cost is drawn on the chart with your profit or loss, along with your trades, the bot's trades and the headlines. The Performance tab shows your profit or loss for each month and year next to the market's.
+- You compete against a simple trend-following bot. At each daily close it sells stocks that closed below their 20-day average and buys stocks above it, putting at most an equal share of its money in each stock. The score strip races your account against the bot and the market.
+- At the end you earn one star for a profit, two for also beating the bot and three for also beating the market, and see the best single bet in hindsight.
+- [scripts/fetch-scenarios.mjs](scripts/fetch-scenarios.mjs) downloaded the prices once from Yahoo Finance into [frontend/data/scenarios.js](frontend/data/scenarios.js). No API key is used and nothing is fetched while playing. Run `node scripts/fetch-scenarios.mjs` to rebuild it.
+- Each scenario has 8–12 stocks, including some of the period's most famous names (AIG, Fannie Mae and the SKF fund that bets against banks in 2008; Moderna and Peloton in 2020; Koss and Palantir in the meme squeeze; Coinbase and Robinhood in 2022). Companies that went bust and were delisted, such as Lehman Brothers and Bear Stearns, have no free price history, so they appear only in the headlines.
+- The picker header is a 3D bar landscape drawn with three.js (loaded from cdnjs) in [frontend/hero3d.js](frontend/hero3d.js): each row is one scenario's market in the year before it starts.
+- Games are saved on the server (Lambda + DynamoDB, `/api/games`), so a refresh resumes where you left off. The rules are in one file shared by the page and the Lambda, and the server's copy decides every price, trade and score. See [aws/README.md](aws/README.md) for setup and [Testing/Week-12-Security](Testing/Week-12-Security/README.md) for the security controls.
