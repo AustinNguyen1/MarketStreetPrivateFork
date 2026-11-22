@@ -12,6 +12,7 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - run: gh repo sync "$GITHUB_REPOSITORY" --branch main
+      # --force: the fork's own bot commit (the activity graph) makes main diverge, and a plain sync then fails
+      - run: gh repo sync "$GITHUB_REPOSITORY" --branch main --force
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
