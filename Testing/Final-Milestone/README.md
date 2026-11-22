@@ -2,6 +2,8 @@
 
 Every student submits their own: the live URL, the test matrix, and their own recording.
 
+Teammates: read [RECORDING-GUIDE.md](RECORDING-GUIDE.md) first. The site has two demos under **Demo**: **Grader check** (submit, retrieve, and run this matrix in the browser with expected next to actual) and **Audience demo** (the animated walkthrough for presentations).
+
 ## 1. Make the matrix real (on the deployed site)
 
 `run-matrix.js` sends the same JSON the order form sends and records expected vs actual for 24 cases (valid, invalid, boundary, business rule, retrieval, not-found, errors). It already passes locally (23 pass, 1 explained). Run it against the live API:
